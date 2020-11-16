@@ -6,3 +6,7 @@ Data will not be pushed to GitHub. We will maintain data each in our local repo.
 
 TO BE DETERMINED
 
+
+
+For me:
+Ružić’s patch-based approach[3] because compared to other patch-based techniques, this algorithm makes use of the Markov Random Field to improve the computation efficiency
