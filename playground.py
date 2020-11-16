@@ -1,4 +1,5 @@
 import tarfile
+import load_data
 
 ###############################
 # Untar data
@@ -10,4 +11,9 @@ def untar_data(name, outdir='./data'):
 # Uncomment to untar data
 # untar_data("indoorCVPR_09annotations.tar")
 # untar_data("indoorCVPR_09.tar")
+###############################
+
+###############################
+# Load data
+
 ###############################

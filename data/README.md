@@ -6,29 +6,29 @@ See "playground.py" if unsure how to untar
 
 File structure in your local repo should look like:
 
-data/
-    Annotations/
-        category1/
-            1a.xml
-            1b.xml
+    data/
+        Annotations/
+            category1/
+                1a.xml
+                1b.xml
+                ...
+            category2/
+                2a.xml
+                2b.xml
+                ...
             ...
-        category2/
-            2a.xml
-            2b.xml
+        Images/
+            category1/
+                1a.jpg
+                1b.jpg
+                ...
+            category2/
+                2a.jpg
+                2b.jpg
             ...
-        ...
-    Images/
-        category1/
-            1a.jpg
-            1b.jpg
-            ...
-        category2/
-            2a.jpg
-            2b.jpg
-        ...
-    README.md
-    TestImages.txt
-    TrainImages.txt
+        README.md
+        TestImages.txt
+        TrainImages.txt
 
 
 To access the data, use the functions in load_data.py
