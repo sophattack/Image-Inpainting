@@ -1,77 +1,53 @@
-import zipfile
-import tarfile
 import numpy as np
 import os
 
-PREFIX = "digit_"
+data_dir = './data/'
 
-TEST_STEM = "test_"
-TRAIN_STEM = "train_"
-
-def check_and_extract_zipfile(filename, data_dir):
-    if os.path.isdir(data_dir) and not os.listdir(data_dir):
-        pass
-    else:
-        zip_f = zipfile.ZipFile(filename, 'r')
-        zip_f.extractall(data_dir)
-        zip_f.close()
-
-def load_data(data_dir, stem):
-    """
-    Loads data from either the training set or the test set and returns the pixel values and
-    class labels
-    """
-    data = []
-    labels = []
-    for i in range(0, 10):
-        path = os.path.join(data_dir, PREFIX + stem + str(i) + ".txt")
-        digits = np.loadtxt(path, delimiter=',')
-        digit_count = digits.shape[0]
-        data.append(digits)
-        labels.append(np.ones(digit_count) * i)
-    data, labels = np.array(data), np.array(labels)
-    data = np.reshape(data, (-1, 64))
-    labels = np.reshape(labels, (-1))
-    return data, labels
-
-def load_all_data(data_dir, shuffle=True):
+def get_img_paths(name):
     '''
-    Loads all data from the given data directory.
-
-    Returns four numpy arrays:
-        - train_data
-        - train_labels
-        - test_data
-        - test_labels
+        Returns a list of image paths which are found in name file
     '''
-    if not os.path.isdir(data_dir):
-        raise OSError('Data directory {} does not exist. Try "load_all_data_from_zip" function first.'.format(data_dir))
+    ret = []
+    with open(data_dir+name, 'r') as reader:
+        ret = reader.readlines()
+    return ret
 
-    train_data, train_labels = load_data(data_dir, TRAIN_STEM)
-    test_data, test_labels = load_data(data_dir, TEST_STEM)
 
-    if shuffle:
-        train_indices = np.random.permutation(train_data.shape[0])
-        test_indices = np.random.permutation(test_data.shape[0])
-        train_data, train_labels = train_data[train_indices], train_labels[train_indices]
-        test_data, test_labels = test_data[test_indices], test_labels[test_indices]
-
-    return train_data, train_labels, test_data, test_labels
-
-def load_all_data_from_zip(zipfile, data_dir, shuffle=True):
+def load_annotations(paths):
     '''
-    Unzips data in zipfile into folder data_dir, then returns all of the data.
-
-    Inputs:
-        - zipfile: string path to hw4digits.zip zipfile
-        - data_dir: path to directory to extract zip file
-        - shuffle: whether to randomly permute the data (true by default)
-
-    Returns four numpy arrays:
-        - train_data
-        - train_labels
-        - test_data
-        - test_labels
+        Returns list of annotations found in paths.
+        Per source of data:
+        "A subset of the images are segmented and annotated with the objects that they contain. The annotations are in LabelMe format."
     '''
-    check_and_extract_zipfile(zipfile, data_dir)
-    return load_all_data(data_dir, shuffle)
+    return []
+
+
+def load_images(paths):
+    '''
+        Returns a list of images found in paths.
+            The original images are all of different dimensions. 
+            The dimensions will be normalized before returning
+        Per source of data:
+        "All images have a minimum resolution of 200 pixels in the smallest axis"
+    '''
+    return []
+
+
+def load_train_data():
+    '''
+        Returns the images and annotations for the train images
+        
+        :returns: (annotations, imgs)
+    '''
+    paths = get_img_paths("TrainImages.txt")
+    return load_annotations(paths), load_images(paths)
+
+
+def load_test_data():
+    '''
+        Returns the images and annotations for the test images
+                
+        :returns: (annotations, imgs)
+    '''
+    paths = get_img_paths("TestImages.txt")
+    return load_annotations(paths), load_images(paths)

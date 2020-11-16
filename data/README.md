@@ -1,8 +1,10 @@
 # Directory Containing Data
 
 Data will not be pushed to GitHub. We will maintain data each in our local repo. To start development, download the data from [here](http://web.mit.edu/torralba/www/indoor.html?fbclid=IwAR0_7QdqHvB-YT3R-ylltLE3F3Ob_tgQzPRpxi1xKNV7sYQx6cfsIuzSkXU) and save (untarred files) under "data/" dir.
+Per source of data: "All images have a minimum resolution of 200 pixels in the smallest axis"
 
-See "playground.py" if unsure how to untar
+
+See "playground.py" if unsure how to untar.
 
 File structure in your local repo should look like:
 
