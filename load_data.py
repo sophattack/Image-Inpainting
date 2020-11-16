@@ -19,6 +19,7 @@ def load_annotations(paths):
         Per source of data:
         "A subset of the images are segmented and annotated with the objects that they contain. The annotations are in LabelMe format."
     '''
+    # TODO: Annotations maybe not needed for our task?
     return []
 
 
@@ -30,6 +31,7 @@ def load_images(paths):
         Per source of data:
         "All images have a minimum resolution of 200 pixels in the smallest axis"
     '''
+    # TODO: Not sure if the images should be truncated to a common size, or padded, etc etc
     return []
 
 
