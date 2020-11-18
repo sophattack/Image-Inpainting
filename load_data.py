@@ -30,6 +30,8 @@ def load_images(paths):
             The dimensions will be normalized before returning
         Per source of data:
         "All images have a minimum resolution of 200 pixels in the smallest axis"
+        After normalization, the images will have dimension 200x200.
+        See data/README.md for more info
     '''
     # TODO: Not sure if the images should be truncated to a common size, or padded, etc etc
     return []
@@ -42,7 +44,8 @@ def load_train_data():
         :returns: (annotations, imgs)
     '''
     paths = get_img_paths("TrainImages.txt")
-    return load_annotations(paths), load_images(paths)
+    # return load_annotations(paths), load_images(paths)
+    return load_images(paths)
 
 
 def load_test_data():
@@ -52,4 +55,5 @@ def load_test_data():
         :returns: (annotations, imgs)
     '''
     paths = get_img_paths("TestImages.txt")
-    return load_annotations(paths), load_images(paths)
+    # return load_annotations(paths), load_images(paths)
+    return load_images(paths)
