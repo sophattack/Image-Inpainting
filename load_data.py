@@ -82,21 +82,28 @@ def load_images(paths):
 
 def load_train_data():
     '''
-        Returns the images and annotations for the train images
+        Returns the train images. If npy file not there, will be generated
         
-        :returns: (annotations, imgs)
     '''
+    outpath = "TrainImages.npy"
+    full_outpath = os.path.abspath(os.path.join(data_dir, outpath))
+    if os.path.exists(full_outpath):
+        return np.load(full_outpath)
     paths = get_img_paths("TrainImages.txt")
-    # return load_annotations(paths), load_images(paths)
-    return load_images(paths)
+    train_data = load_images(paths)
+    np.save(full_outpath, train_data)
+    return train_data
 
 
 def load_test_data():
     '''
-        Returns the images and annotations for the test images
-                
-        :returns: (annotations, imgs)
+        Returns the test images. If npy file not there, will be generated
     '''
+    outpath = "TestImages.npy"
+    full_outpath = os.path.abspath(os.path.join(data_dir, outpath))
+    if os.path.exists(full_outpath):
+        return np.load(full_outpath)
     paths = get_img_paths("TestImages.txt")
-    # return load_annotations(paths), load_images(paths)
-    return load_images(paths)
+    train_data = load_images(paths)
+    np.save(full_outpath, train_data)
+    return train_data

@@ -27,7 +27,9 @@ File structure in your local repo should look like:
                 2b.jpg
             ...
         README.md
+        TestImages.npy    <= generated after load_data is called
         TestImages.txt
+        TrainImages.npy   <= generated after load_data is called
         TrainImages.txt
 
 
