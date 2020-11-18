@@ -15,5 +15,9 @@ def untar_data(name, outdir='./data'):
 
 ###############################
 # Load data
+test_data = load_data.load_test_data()
+train_data = load_data.load_train_data()
+print(test_data.shape)
+print(train_data.shape)
 
 ###############################

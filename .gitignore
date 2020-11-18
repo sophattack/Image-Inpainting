@@ -3,3 +3,5 @@ Indoor-scene-recognition/
 
 data/*
 !data/README.md
+
+__pycache__
