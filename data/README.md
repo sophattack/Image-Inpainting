@@ -39,3 +39,5 @@ Using the data preparation technique mentioned [here](https://machinelearningmas
 
 If an image is square => A simple downsize to 200x200.
 If an image is rectangle, we know the smallest axis is at least 200. Resize the rectangle such that the smallest axis is now 200. The larger dimension will be cropped in the center.
+
+Therefore the normalized images will be 200x200x3, where the last axis denotes the color channels BGR.

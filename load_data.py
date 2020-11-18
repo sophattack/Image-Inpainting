@@ -1,6 +1,8 @@
 import numpy as np
 import os
 import cv2
+import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 data_dir = 'data'
 
@@ -29,12 +31,24 @@ def load_normalized_img(path):
         Return the image found at path as an array-like matrix
 
         The returned image will be normalized to the dimensions 200x200x3 (3 color channels)
+
+        Color channels in B G R (same as cv2)
     '''
     full_path = os.path.abspath(os.path.join(data_dir, "Images", path))
     img = cv2.imread(full_path)
+    # For some reason, some images are unable to be read through cv2.. (returns NoneType)
+    # Even tho the path exists (triple checked with os.path.exists(full_path))
+    # Specifically I encountered this issue with "buffet/Buffet_Set_Up_gif.jpg" => Previous paths in file worked correctly
+    # My guess is that maybe since it used to be a gif (per _gif), the format of the file is different?
+    # Per cv2.imread docs, file type is determined by content. 
+    # If undeduceable, will try to read with matplotlib.pyplot.imread which determines type by file extension
+    # NOTE: matplotlib uses RGB (or RGBA) instead of BGR => Will swap axis here
     if img is None:
-        print(full_path)
-        print(os.path.exists(full_path))
+        img = plt.imread(full_path)
+        if img.shape[2] == 4: # RGBA, drop the alpha channel
+            img = img[:, :, :-1] # Dont include last channel
+        # Convert from RGB to BGR
+        img = img[:, :, ::-1]
     # Resize image such that the smallest axis is downsized to 200
     h, w = img.shape[0], img.shape[1]
     if h < w: # Height is shorter than width
@@ -61,7 +75,7 @@ def load_images(paths):
         See data/README.md for more info
     '''
     images = np.zeros((len(paths), 200, 200, 3), dtype=np.uint8) # NumImagesx200x200x3 => 3 color channels
-    for path_i in range(len(paths)):
+    for path_i in tqdm(range(len(paths))):
         images[path_i] = load_normalized_img(os.path.normpath(paths[path_i]))
     return images
 
