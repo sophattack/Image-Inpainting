@@ -81,8 +81,8 @@ def get_context_descriptors(img, block_size, N_f=20):
     '''
     d = img.shape[0]
     
-    filters = np.random.rand((N_f, 3, 3)) # N_f number of 3x3 filters
-    con_desc = np.zeros((N_f, d, d))
+    filters = np.random.rand(N_f, 3, 3) # N_f number of 3x3 filters
+    con_desc = np.zeros((N_f, d, d, 3))
     blur_img = cv2.GaussianBlur(img,(5,5),0)
     
     for f_i in range(N_f):
@@ -90,15 +90,15 @@ def get_context_descriptors(img, block_size, N_f=20):
         con_desc[f_i] = cv2.filter2D(blur_img, -1, filt) # dxd
     
     con_desc = np.moveaxis(con_desc, 0, -1) # dxdxN_f
-    num_blocks = d/block_size
+    num_blocks = d//block_size
     half_block = block_size//2
 
-    context_descriptors = np.zeros((num_blocks, num_blocks, N_f))
+    context_descriptors = np.zeros((num_blocks, num_blocks, 3, N_f))
     for col in range(num_blocks):
         block_col = (col * block_size) + half_block
         for row in range(num_blocks):
             block_row = (row * block_size) + half_block
-            context_descriptors[col, row] = con_desc[block_col, block_row]
+            context_descriptors[col, row, :] = con_desc[block_col, block_row]
     
     return context_descriptors
 
@@ -109,6 +109,25 @@ def energy_minimization():
     '''
     pass
 
+def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptors, block_size, threshold=100.0):
+    '''
+        Returns a list of patch locations where the patches are contextually similar to 
+        the given patch at patch_loc_col/row. 
+    '''
+    num_blocks = context_descriptors.shape[0]
+    c_l = context_descriptors[patch_loc_col, patch_loc_row]
+    
+    locations = []
+    for col in range(num_blocks):
+        for row in range(num_blocks):
+            c_m = context_descriptors[col, row] # N_f
+            diss = measure_contextual_dissimilarity(c_l, c_m)
+            print(diss)
+            if diss <= threshold:
+                locations.append((col, row))
+    
+    return locations
+
 if __name__ == '__main__':
     test_data = load_data.load_test_data()
     train_data = load_data.load_train_data()
@@ -116,6 +135,39 @@ if __name__ == '__main__':
     img = train_data[0] # 200x200x3
     d = img.shape[0]
     mask = np.zeros((d, d), dtype=np.bool)
-    mask[30:100, 50:60] = True
+    mask[79:152, 55:78] = True
+
+    img_cpy = np.copy(img)
+    img_cpy[mask.nonzero()] = 0
+    block_size = 5
+    num_blocks = d//block_size
+    half_block = block_size//2
+    for col in range(1, num_blocks):
+        img_col = col*block_size
+        img_cpy[img_col, :] = [255, 0, 0]
+        img_cpy[:, img_col] = [255, 0, 0]
     
+    # cv2.imshow("Img with mask", img_cpy)
+    # cv2.waitKey(0)
+    
+    # Locations of blocks that have at least one pixel needing to be filled
+    patch_locations = []
+    for col in range(num_blocks):
+        img_col_start = col*block_size
+        img_col_end = img_col_start + block_size
+        for row in range(num_blocks):
+            img_row_start = row*block_size
+            img_row_end = img_row_start + block_size
+            mask_patch = mask[img_col_start:img_col_end, img_row_start:img_row_end]
+            if np.any(mask_patch):
+                block_col = col + half_block
+                block_row = row + half_block
+                patch_locations.append((block_col, block_row))
+    
+    context_descriptors = get_context_descriptors(img, block_size) # num_blocks x num_blocks x N_f
+    for (block_col, block_row) in patch_locations:
+        similar_patches = get_similar_patch_locations(block_col, block_row, context_descriptors, block_size)
+        quit()
+    # Patch selection only done for patches who have altleast a pixel of "target"
+    # Aka, no need to patch select if the given block is already filled
     context_aware_patch_selection(img, mask, False)
