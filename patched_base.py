@@ -109,13 +109,14 @@ def energy_minimization():
     '''
     pass
 
-def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptors, block_size, threshold=100.0):
+def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptors, block_size, threshold=50.0):
     '''
         Returns a list of patch locations where the patches are contextually similar to 
         the given patch at patch_loc_col/row. 
     '''
     num_blocks = context_descriptors.shape[0]
-    c_l = context_descriptors[patch_loc_col, patch_loc_row]
+    block_col, block_row = convert_img_center_to_block(patch_loc_col, patch_loc_row, block_size)
+    c_l = context_descriptors[block_col, block_row]
     
     locations = []
     for col in range(num_blocks):
@@ -124,9 +125,73 @@ def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptor
             diss = measure_contextual_dissimilarity(c_l, c_m)
             print(diss)
             if diss <= threshold:
-                locations.append((col, row))
+                img_col, img_row = convert_block_to_img_center(col, row, block_size)
+                locations.append((img_col, img_row))
     
     return locations
+
+def convert_block_to_img_center(block_col, block_row, block_size):
+    '''
+        Returns the image pixel locations from block location.
+        I.e return the pixel location of the block centered at block_col,block_row
+
+        -> convert_block_to_img_center(0, 0, 5)
+        (2, 2)
+        -> convert_block_to_img_center(1, 3, 5)
+        (7, 17)
+    '''
+    half_block = block_size // 2
+    col = block_col*block_size + half_block
+    row = block_row*block_size + half_block
+    return (col, row)
+
+
+def convert_block_to_img_range(block_col, block_size):
+    '''
+        Returns the image pixel range from block location.
+        I.e return the pixel range of of the block surrounding block_col
+
+        The end of range is exclusive
+
+        -> convert_block_to_img_range(0, 5)
+        [0, 5)
+        -> convert_block_to_img_range(3, 5)
+        [15, 20)
+    '''
+    start = block_col*block_size
+    end = start + block_size
+    return (start, end)
+
+
+def convert_block_center_to_img_range(block_col, block_size):
+    '''
+        Return the image pixel range from block center pixel location
+
+        The end range is exclusive
+
+        -> convert_block_center_to_img_range(2, 5)
+        [0, 5)
+        -> convert_block_center_to_img_range(17, 5)
+        [15, 20)
+    '''
+    half_block = block_size // 2
+    start = block_col - half_block
+    end = start + block_size
+    return (start, end)
+
+def convert_img_center_to_block(img_col, img_row, block_size):
+    '''
+        Return the block indices of the block centered around img_col and img_row 
+    
+        -> convert_img_center_to_block(2, 2, 5)
+        (0,0)
+        -> convert_img_center_to_block(7, 17, 5)
+        (1,3)
+    '''
+    col = img_col // block_size
+    row = img_row // block_size
+    return (col, row)
+
 
 if __name__ == '__main__':
     test_data = load_data.load_test_data()
@@ -139,6 +204,7 @@ if __name__ == '__main__':
 
     img_cpy = np.copy(img)
     img_cpy[mask.nonzero()] = 0
+    masked_img = np.copy(img_cpy)
     block_size = 5
     num_blocks = d//block_size
     half_block = block_size//2
@@ -153,21 +219,30 @@ if __name__ == '__main__':
     # Locations of blocks that have at least one pixel needing to be filled
     patch_locations = []
     for col in range(num_blocks):
-        img_col_start = col*block_size
-        img_col_end = img_col_start + block_size
+        img_col_start, img_col_end = convert_block_to_img_range(col, block_size)
         for row in range(num_blocks):
-            img_row_start = row*block_size
-            img_row_end = img_row_start + block_size
+            img_row_start , img_row_end = convert_block_to_img_range(row, block_size)
             mask_patch = mask[img_col_start:img_col_end, img_row_start:img_row_end]
             if np.any(mask_patch):
-                block_col = col + half_block
-                block_row = row + half_block
+                block_col, block_row = convert_block_to_img_center(col, row, block_size)
                 patch_locations.append((block_col, block_row))
     
-    context_descriptors = get_context_descriptors(img, block_size) # num_blocks x num_blocks x N_f
+    context_descriptors = get_context_descriptors(masked_img, block_size) # num_blocks x num_blocks x N_f
     for (block_col, block_row) in patch_locations:
+        img_col_start, img_col_end = convert_block_center_to_img_range(block_col, block_size)
+        img_row_start, img_row_end = convert_block_center_to_img_range(block_row, block_size)
+        potential_img = np.copy(img_cpy)
+        img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 0, 255]
+        cv2.imshow("Img OG patch", img_cpy)
         similar_patches = get_similar_patch_locations(block_col, block_row, context_descriptors, block_size)
+        for (pot_col, pot_row) in similar_patches:
+            pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
+            pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
+            potential_img[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 255, 0]
+        cv2.imshow("Img similar patchs", potential_img)
+        cv2.waitKey(0)
         quit()
+
     # Patch selection only done for patches who have altleast a pixel of "target"
     # Aka, no need to patch select if the given block is already filled
     context_aware_patch_selection(img, mask, False)
