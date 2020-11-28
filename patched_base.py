@@ -213,8 +213,7 @@ if __name__ == '__main__':
         img_cpy[img_col, :] = [255, 0, 0]
         img_cpy[:, img_col] = [255, 0, 0]
     
-    # cv2.imshow("Img with mask", img_cpy)
-    # cv2.waitKey(0)
+    cv2.imshow("Img with mask", img_cpy)
     
     # Locations of blocks that have at least one pixel needing to be filled
     patch_locations = []
@@ -228,21 +227,28 @@ if __name__ == '__main__':
                 patch_locations.append((block_col, block_row))
     
     context_descriptors = get_context_descriptors(masked_img, block_size) # num_blocks x num_blocks x N_f
+    total_block_size = block_size**2  # How many pixels inside the block
     for (block_col, block_row) in patch_locations:
         img_col_start, img_col_end = convert_block_center_to_img_range(block_col, block_size)
         img_row_start, img_row_end = convert_block_center_to_img_range(block_row, block_size)
-        potential_img = np.copy(img_cpy)
-        img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 0, 255]
-        cv2.imshow("Img OG patch", img_cpy)
-        similar_patches = get_similar_patch_locations(block_col, block_row, context_descriptors, block_size)
-        for (pot_col, pot_row) in similar_patches:
-            pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
-            pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
-            potential_img[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 255, 0]
-        cv2.imshow("Img similar patchs", potential_img)
-        cv2.waitKey(0)
-        quit()
-
+        mask_patch = mask[img_col_start:img_col_end, img_row_start:img_row_end]
+        num_unknown = np.sum(mask_patch)
+        print(num_unknown)
+        if num_unknown / total_block_size < 0.5:
+            # reliable
+            img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 0, 255]
+            # similar_patches = get_similar_patch_locations(block_col, block_row, context_descriptors, block_size)
+            # for (pot_col, pot_row) in similar_patches:
+            #     pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
+            #     pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
+            #     potential_img[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 255, 0]
+        else:
+            # Unreliable block
+            # Skip FOR NOW
+            # img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 255, 0]
+            pass
+    cv2.imshow("Img with reliable patches", img_cpy)
+    cv2.waitKey(0)
     # Patch selection only done for patches who have altleast a pixel of "target"
     # Aka, no need to patch select if the given block is already filled
-    context_aware_patch_selection(img, mask, False)
+    # context_aware_patch_selection(img, mask, False)
