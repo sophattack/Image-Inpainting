@@ -220,7 +220,7 @@ if __name__ == '__main__':
     img = train_data[0] # 200x200x3
     d = img.shape[0]
     mask = np.zeros((d, d), dtype=np.bool)
-    mask[79:152, 55:78] = True
+    mask[79:152, 65:77] = True
 
     img_cpy = np.copy(img)
     img_cpy[mask.nonzero()] = 0
