@@ -123,7 +123,6 @@ def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptor
         for row in range(num_blocks):
             c_m = context_descriptors[col, row] # N_f
             diss = measure_contextual_dissimilarity(c_l, c_m)
-            print(diss)
             if diss <= threshold:
                 img_col, img_row = convert_block_to_img_center(col, row, block_size)
                 locations.append((img_col, img_row))
@@ -193,6 +192,27 @@ def convert_img_center_to_block(img_col, img_row, block_size):
     return (col, row)
 
 
+def combine_multi_candidate_patches(masked_img, patch_locations, block_size):
+    '''
+        Return a combination of candidate patches.
+        Only combine source regions in patch
+
+        :param masked_img: MxMx3 -> 200x200x3. Target regions are 0
+        :param patch_locations: list[(col, row)] of center pixels of blocks
+        :param block_size: size of patches
+        :return: combined
+            combined: avg weighted combination of all candidate patches 
+    '''
+    num_patches = len(patch_locations)
+    combined = np.zeros((num_patches, block_size, block_size, 3))
+    for i in range(num_patches):
+        pot_col, pot_row = patch_locations[i]
+        pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
+        pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
+        combined[i] = masked_img[pot_col_start:pot_col_end, pot_row_start:pot_row_end] # block_sizexblock_sizex3
+
+    return np.mean(combined, axis=0)
+
 if __name__ == '__main__':
     test_data = load_data.load_test_data()
     train_data = load_data.load_train_data()
@@ -205,6 +225,7 @@ if __name__ == '__main__':
     img_cpy = np.copy(img)
     img_cpy[mask.nonzero()] = 0
     masked_img = np.copy(img_cpy)
+    final_img = np.copy(masked_img)
     block_size = 5
     num_blocks = d//block_size
     half_block = block_size//2
@@ -212,8 +233,6 @@ if __name__ == '__main__':
         img_col = col*block_size
         img_cpy[img_col, :] = [255, 0, 0]
         img_cpy[:, img_col] = [255, 0, 0]
-    
-    cv2.imshow("Img with mask", img_cpy)
     
     # Locations of blocks that have at least one pixel needing to be filled
     patch_locations = []
@@ -233,21 +252,19 @@ if __name__ == '__main__':
         img_row_start, img_row_end = convert_block_center_to_img_range(block_row, block_size)
         mask_patch = mask[img_col_start:img_col_end, img_row_start:img_row_end]
         num_unknown = np.sum(mask_patch)
-        print(num_unknown)
         if num_unknown / total_block_size < 0.5:
             # reliable
             img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 0, 255]
-            # similar_patches = get_similar_patch_locations(block_col, block_row, context_descriptors, block_size)
-            # for (pot_col, pot_row) in similar_patches:
-            #     pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
-            #     pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
-            #     potential_img[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 255, 0]
+            similar_patches = get_similar_patch_locations(block_col, block_row, context_descriptors, block_size)
+            combined = combine_multi_candidate_patches(masked_img, similar_patches, block_size)
+            final_img[img_col_start:img_col_end, img_row_start:img_row_end][mask_patch, :] = combined[mask_patch, :]
         else:
             # Unreliable block
             # Skip FOR NOW
             # img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 255, 0]
             pass
-    cv2.imshow("Img with reliable patches", img_cpy)
+    cv2.imshow("patches filled in", final_img)
+    cv2.imshow("which patches were filled in", img_cpy)
     cv2.waitKey(0)
     # Patch selection only done for patches who have altleast a pixel of "target"
     # Aka, no need to patch select if the given block is already filled
