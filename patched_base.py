@@ -213,6 +213,46 @@ def combine_multi_candidate_patches(masked_img, patch_locations, block_size):
 
     return np.mean(combined, axis=0)
 
+def get_neighbor_patch_locations(col, row, block_size, num_blocks):
+    '''
+        Return locations of neighbor patches of patch at col,row
+
+        At most, 8 neighbors (borders around a 3x3 square)
+
+        -> get_neighbor_patch_locations(2, 2, 5)
+        [(2, 7), (7, 2), (7, 7)]
+    '''
+    neighbors = []
+    block_col, block_row = convert_img_center_to_block(col, row, block_size)
+
+    if block_col > 0:
+        new_col, new_row = convert_block_to_img_center(block_col-1, block_row, block_size)
+        neighbors.append((new_col, new_row))
+        if block_row > 0:
+            new_col, new_row = convert_block_to_img_center(block_col-1, block_row-1, block_size)
+            neighbors.append((new_col, new_row))
+        if block_row < num_blocks-1:
+            new_col, new_row = convert_block_to_img_center(block_col-1, block_row+1, block_size)
+            neighbors.append((new_col, new_row))
+    if block_row > 0:
+        new_col, new_row = convert_block_to_img_center(block_col, block_row-1, block_size)
+        neighbors.append((new_col, new_row))
+    if block_row < num_blocks-1:
+        new_col, new_row = convert_block_to_img_center(block_col, block_row+1, block_size)
+        neighbors.append((new_col, new_row))
+    if block_col < num_blocks-1:
+        new_col, new_row = convert_block_to_img_center(block_col+1, block_row, block_size)
+        neighbors.append((new_col, new_row))
+        if block_row > 0:
+            new_col, new_row = convert_block_to_img_center(block_col+1, block_row-1, block_size)
+            neighbors.append((new_col, new_row))
+        if block_row < num_blocks-1:
+            new_col, new_row = convert_block_to_img_center(block_col+1, block_row+1, block_size)
+            neighbors.append((new_col, new_row))
+
+    return neighbors
+
+
 if __name__ == '__main__':
     test_data = load_data.load_test_data()
     train_data = load_data.load_train_data()
@@ -254,16 +294,27 @@ if __name__ == '__main__':
         num_unknown = np.sum(mask_patch)
         if num_unknown / total_block_size < 0.5:
             # reliable
+            continue
+            print("here")
             img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 0, 255]
             similar_patches = get_similar_patch_locations(block_col, block_row, context_descriptors, block_size)
             combined = combine_multi_candidate_patches(masked_img, similar_patches, block_size)
             final_img[img_col_start:img_col_end, img_row_start:img_row_end][mask_patch, :] = combined[mask_patch, :]
         else:
             # Unreliable block
-            # Skip FOR NOW
-            # img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 255, 0]
+            img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 255, 0]
+            neighbor_patches = get_neighbor_patch_locations(block_col, block_row, block_size, num_blocks)
+            print(len(neighbor_patches))
+            # TODO: Add the outer loop into a method so the following loop can have recursive calls
+            for (pot_col, pot_row) in neighbor_patches:
+                pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
+                pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
+                img_cpy[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 0, 255]
+            cv2.imshow("which patches were filled in", img_cpy)
+            cv2.waitKey(0)
+            quit()
             pass
-    cv2.imshow("patches filled in", final_img)
+    # cv2.imshow("patches filled in", final_img)
     cv2.imshow("which patches were filled in", img_cpy)
     cv2.waitKey(0)
     # Patch selection only done for patches who have altleast a pixel of "target"
