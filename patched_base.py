@@ -62,7 +62,7 @@ def measure_contextual_dissimilarity(c_l, c_m):
     diff = c_l - c_m
     return np.linalg.norm(diff)
 
-def get_context_descriptors(img, block_size, N_f=20):
+def get_context_descriptors(img, block_size, N_f=50):
     '''
         Return context descriptors for the blocks in the image. 
         context descriptors computed using multi-channel filtering.
@@ -109,7 +109,7 @@ def energy_minimization():
     '''
     pass
 
-def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptors, block_size, threshold=50.0):
+def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptors, block_size, threshold=5.0):
     '''
         Returns a list of patch locations where the patches are contextually similar to 
         the given patch at patch_loc_col/row. 
@@ -119,6 +119,7 @@ def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptor
     c_l = context_descriptors[block_col, block_row]
     
     locations = []
+    distances = []
     for col in range(num_blocks):
         for row in range(num_blocks):
             c_m = context_descriptors[col, row] # N_f
@@ -126,8 +127,9 @@ def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptor
             if diss <= threshold:
                 img_col, img_row = convert_block_to_img_center(col, row, block_size)
                 locations.append((img_col, img_row))
+                distances.append(diss)
     
-    return locations
+    return locations, distances
 
 def convert_block_to_img_center(block_col, block_row, block_size):
     '''
@@ -192,7 +194,7 @@ def convert_img_center_to_block(img_col, img_row, block_size):
     return (col, row)
 
 
-def combine_multi_candidate_patches(masked_img, patch_locations, block_size):
+def combine_multi_candidate_patches(masked_img, patch_locations, block_size, diss):
     '''
         Return a combination of candidate patches.
         Only combine source regions in patch
@@ -205,13 +207,15 @@ def combine_multi_candidate_patches(masked_img, patch_locations, block_size):
     '''
     num_patches = len(patch_locations)
     combined = np.zeros((num_patches, block_size, block_size, 3))
+    total_weight = np.sum(diss)
     for i in range(num_patches):
         pot_col, pot_row = patch_locations[i]
+        weight = diss[i]/total_weight
         pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
         pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
-        combined[i] = masked_img[pot_col_start:pot_col_end, pot_row_start:pot_row_end] # block_sizexblock_sizex3
+        combined[i] = weight*masked_img[pot_col_start:pot_col_end, pot_row_start:pot_row_end] # block_sizexblock_sizex3
 
-    return np.mean(combined, axis=0)
+    return np.sum(combined, axis=0)
 
 def get_neighbor_patch_locations(col, row, block_size, num_blocks):
     '''
@@ -257,10 +261,10 @@ if __name__ == '__main__':
     test_data = load_data.load_test_data()
     train_data = load_data.load_train_data()
 
-    img = train_data[0] # 200x200x3
+    img = train_data[1] # 200x200x3
     d = img.shape[0]
     mask = np.zeros((d, d), dtype=np.bool)
-    mask[79:152, 65:77] = True
+    mask[89:95, 120:122] = True
 
     img_cpy = np.copy(img)
     img_cpy[mask.nonzero()] = 0
@@ -285,21 +289,29 @@ if __name__ == '__main__':
                 block_col, block_row = convert_block_to_img_center(col, row, block_size)
                 patch_locations.append((block_col, block_row))
     
-    context_descriptors = get_context_descriptors(masked_img, block_size) # num_blocks x num_blocks x N_f
+    context_descriptors = get_context_descriptors(img, block_size) # num_blocks x num_blocks x N_f
     total_block_size = block_size**2  # How many pixels inside the block
     for (block_col, block_row) in patch_locations:
         img_col_start, img_col_end = convert_block_center_to_img_range(block_col, block_size)
         img_row_start, img_row_end = convert_block_center_to_img_range(block_row, block_size)
         mask_patch = mask[img_col_start:img_col_end, img_row_start:img_row_end]
         num_unknown = np.sum(mask_patch)
+        print(num_unknown, total_block_size)
         if num_unknown / total_block_size < 0.5:
             # reliable
-            continue
+            # continue
             print("here")
             img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 0, 255]
-            similar_patches = get_similar_patch_locations(block_col, block_row, context_descriptors, block_size)
-            combined = combine_multi_candidate_patches(masked_img, similar_patches, block_size)
+            similar_patches, distances = get_similar_patch_locations(block_col, block_row, context_descriptors, block_size)
+            print(len(similar_patches))
+            for (pot_col, pot_row) in similar_patches:
+                pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
+                pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
+                img_cpy[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 255, 0]
+            combined = combine_multi_candidate_patches(masked_img, similar_patches, block_size, distances)
             final_img[img_col_start:img_col_end, img_row_start:img_row_end][mask_patch, :] = combined[mask_patch, :]
+            cv2.imshow("which patches were filled in", img_cpy)
+            cv2.waitKey(0)
         else:
             # Unreliable block
             img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 255, 0]
@@ -312,9 +324,10 @@ if __name__ == '__main__':
                 img_cpy[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 0, 255]
             cv2.imshow("which patches were filled in", img_cpy)
             cv2.waitKey(0)
-            quit()
-            pass
-    # cv2.imshow("patches filled in", final_img)
+            # quit()
+            # pass
+    cv2.imshow("original", masked_img)
+    cv2.imshow("patches filled in", final_img)
     cv2.imshow("which patches were filled in", img_cpy)
     cv2.waitKey(0)
     # Patch selection only done for patches who have altleast a pixel of "target"
