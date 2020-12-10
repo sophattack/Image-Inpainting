@@ -295,40 +295,32 @@ if __name__ == '__main__':
         img_col_start, img_col_end = convert_block_center_to_img_range(block_col, block_size)
         img_row_start, img_row_end = convert_block_center_to_img_range(block_row, block_size)
         mask_patch = mask[img_col_start:img_col_end, img_row_start:img_row_end]
+        cur_img_cpy = np.copy(img_cpy)
         num_unknown = np.sum(mask_patch)
-        print(num_unknown, total_block_size)
         if num_unknown / total_block_size < 0.5:
             # reliable
-            # continue
-            print("here")
-            img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 0, 255]
             similar_patches, distances = get_similar_patch_locations(block_col, block_row, context_descriptors, block_size)
-            print(len(similar_patches))
             for (pot_col, pot_row) in similar_patches:
                 pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
                 pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
-                img_cpy[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 255, 0]
+                cur_img_cpy[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 255, 0]
             combined = combine_multi_candidate_patches(masked_img, similar_patches, block_size, distances)
             final_img[img_col_start:img_col_end, img_row_start:img_row_end][mask_patch, :] = combined[mask_patch, :]
-            cv2.imshow("which patches were filled in", img_cpy)
-            cv2.waitKey(0)
         else:
             # Unreliable block
-            img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 255, 0]
             neighbor_patches = get_neighbor_patch_locations(block_col, block_row, block_size, num_blocks)
-            print(len(neighbor_patches))
-            # TODO: Add the outer loop into a method so the following loop can have recursive calls
             for (pot_col, pot_row) in neighbor_patches:
                 pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
                 pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
-                img_cpy[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 0, 255]
+                cur_img_cpy[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 255, 0]
             cv2.imshow("which patches were filled in", img_cpy)
             cv2.waitKey(0)
-            # quit()
-            # pass
+        cur_img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 0, 255]
+        cv2.imshow("which patches were filled in", cur_img_cpy)
+        cv2.waitKey(0)
     cv2.imshow("original", masked_img)
     cv2.imshow("patches filled in", final_img)
-    cv2.imshow("which patches were filled in", img_cpy)
+    # cv2.imshow("which patches were filled in", img_cpy)
     cv2.waitKey(0)
     # Patch selection only done for patches who have altleast a pixel of "target"
     # Aka, no need to patch select if the given block is already filled
