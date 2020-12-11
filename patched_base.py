@@ -109,7 +109,7 @@ def energy_minimization():
     '''
     pass
 
-def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptors, block_size, threshold=5.0):
+def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptors, block_size, threshold=5):
     '''
         Returns a list of patch locations where the patches are contextually similar to 
         the given patch at patch_loc_col/row. 
@@ -267,9 +267,11 @@ if __name__ == '__main__':
     d = img.shape[0]
     mask_d = 9
     mask = np.zeros((d, d), dtype=np.bool)
-    # mask[89:95, 120:122] = True
-    start_col, start_row = np.random.randint(0, high=d-mask_d, size=2)
-    mask[start_col:start_col+mask_d, start_row:start_row+mask_d] = True
+    mask[89:100, 118:122] = True
+    mask[8:12, 61:80] = True
+    mask[98:102, 48:52] = True
+    # start_col, start_row = np.random.randint(0, high=d-mask_d, size=2)
+    # mask[start_col:start_col+mask_d, start_row:start_row+mask_d] = True
 
     img_cpy = np.copy(img)
     img_cpy[mask.nonzero()] = 0
@@ -313,11 +315,16 @@ if __name__ == '__main__':
             final_img[img_col_start:img_col_end, img_row_start:img_row_end][mask_patch, :] = combined[mask_patch, :]
         else:
             # Unreliable block
+            print("here")
             neighbor_patches = get_neighbor_patch_locations(block_col, block_row, block_size, num_blocks)
+            similar_patches, distances = [], []
             for (pot_col, pot_row) in neighbor_patches:
                 pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
                 pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
                 cur_img_cpy[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 255, 0]
+                cur_similar, cur_dist = get_similar_patch_locations(pot_col, pot_row, context_descriptors, block_size)
+                similar_patches.extend(cur_similar)
+                distances.extend(cur_dist)
             combined = combine_multi_candidate_patches(masked_img, neighbor_patches, block_size)
         cur_img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 0, 255]
         cv2.imshow("which patches were filled in", cur_img_cpy)
