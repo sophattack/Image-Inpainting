@@ -194,7 +194,7 @@ def convert_img_center_to_block(img_col, img_row, block_size):
     return (col, row)
 
 
-def combine_multi_candidate_patches(masked_img, patch_locations, block_size, diss):
+def combine_multi_candidate_patches(masked_img, patch_locations, block_size, diss=None):
     '''
         Return a combination of candidate patches.
         Only combine source regions in patch
@@ -206,6 +206,8 @@ def combine_multi_candidate_patches(masked_img, patch_locations, block_size, dis
             combined: avg weighted combination of all candidate patches 
     '''
     num_patches = len(patch_locations)
+    if diss is None:
+        diss = [1] * num_patches
     combined = np.zeros((num_patches, block_size, block_size, 3))
     total_weight = np.sum(diss)
     for i in range(num_patches):
@@ -263,8 +265,11 @@ if __name__ == '__main__':
 
     img = train_data[1] # 200x200x3
     d = img.shape[0]
+    mask_d = 9
     mask = np.zeros((d, d), dtype=np.bool)
-    mask[89:95, 120:122] = True
+    # mask[89:95, 120:122] = True
+    start_col, start_row = np.random.randint(0, high=d-mask_d, size=2)
+    mask[start_col:start_col+mask_d, start_row:start_row+mask_d] = True
 
     img_cpy = np.copy(img)
     img_cpy[mask.nonzero()] = 0
@@ -313,8 +318,7 @@ if __name__ == '__main__':
                 pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
                 pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
                 cur_img_cpy[pot_col_start:pot_col_end, pot_row_start:pot_row_end] = [0, 255, 0]
-            cv2.imshow("which patches were filled in", img_cpy)
-            cv2.waitKey(0)
+            combined = combine_multi_candidate_patches(masked_img, neighbor_patches, block_size)
         cur_img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 0, 255]
         cv2.imshow("which patches were filled in", cur_img_cpy)
         cv2.waitKey(0)
