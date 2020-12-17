@@ -206,13 +206,19 @@ def combine_multi_candidate_patches(masked_img, patch_locations, block_size, dis
             combined: avg weighted combination of all candidate patches 
     '''
     num_patches = len(patch_locations)
-    if diss is None:
-        diss = [1] * num_patches
+    if diss is None or np.sum(diss) == 0:
+        weights = [1] * num_patches
+    else: 
+        # We want a highest distance to have a lower weight.
+        # We want all weight to sum to 1
+        total_weight = np.sum(diss)
+        weights = diss * 1/total_weight # highest distance has lower weight.
+
     combined = np.zeros((num_patches, block_size, block_size, 3))
-    total_weight = np.sum(diss)
+    total_weight = np.sum(weights)
     for i in range(num_patches):
         pot_col, pot_row = patch_locations[i]
-        weight = diss[i]/total_weight
+        weight = weights[i]/total_weight # all weight to sum to 1
         pot_col_start, pot_col_end = convert_block_center_to_img_range(pot_col, block_size)
         pot_row_start, pot_row_end = convert_block_center_to_img_range(pot_row, block_size)
         combined[i] = weight*masked_img[pot_col_start:pot_col_end, pot_row_start:pot_row_end] # block_sizexblock_sizex3
@@ -267,9 +273,11 @@ if __name__ == '__main__':
     d = img.shape[0]
     mask_d = 9
     mask = np.zeros((d, d), dtype=np.bool)
-    mask[89:100, 118:122] = True
-    mask[8:12, 61:80] = True
-    mask[98:102, 48:52] = True
+    
+    mask[89:100, 118:122] = True # riight center, tall
+    mask[8:12, 61:80] = True # left top, long
+    mask[98:102, 48:52] = True # left center, square
+
     # start_col, start_row = np.random.randint(0, high=d-mask_d, size=2)
     # mask[start_col:start_col+mask_d, start_row:start_row+mask_d] = True
 
