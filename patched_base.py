@@ -109,7 +109,7 @@ def energy_minimization():
     '''
     pass
 
-def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptors, block_size, threshold=5):
+def get_similar_patch_locations(patch_loc_col, patch_loc_row, context_descriptors, block_size, threshold=50):
     '''
         Returns a list of patch locations where the patches are contextually similar to 
         the given patch at patch_loc_col/row. 
@@ -269,14 +269,25 @@ if __name__ == '__main__':
     test_data = load_data.load_test_data()
     train_data = load_data.load_train_data()
 
-    img = train_data[1] # 200x200x3
+    img = train_data[25] # 200x200x3
+    # img = cv2.imread('test_image.jpg')
+    img = cv2.resize(img, (250, 250))
     d = img.shape[0]
-    mask_d = 9
     mask = np.zeros((d, d), dtype=np.bool)
+    mask_d = 3
+    num_masks = 100
+
+    for _ in range(num_masks):
+        start_col, start_row = np.random.randint(0, high=d-mask_d, size=2)
+        # start_col, start_row = 100, 100
+        mask[start_col:start_col+mask_d, start_row:start_row+mask_d] = True
+
+    # mask_d = 9
+    # mask = np.zeros((d, d), dtype=np.bool)
     
-    mask[89:100, 118:122] = True # riight center, tall
-    mask[8:12, 61:80] = True # left top, long
-    mask[98:102, 48:52] = True # left center, square
+    # mask[89:100, 118:122] = True # riight center, tall
+    # mask[8:12, 61:80] = True # left top, long
+    # mask[98:102, 48:52] = True # left center, square
 
     # start_col, start_row = np.random.randint(0, high=d-mask_d, size=2)
     # mask[start_col:start_col+mask_d, start_row:start_row+mask_d] = True
@@ -285,7 +296,7 @@ if __name__ == '__main__':
     img_cpy[mask.nonzero()] = 0
     masked_img = np.copy(img_cpy)
     final_img = np.copy(masked_img)
-    block_size = 5
+    block_size = 25
     num_blocks = d//block_size
     half_block = block_size//2
     for col in range(1, num_blocks):
@@ -323,7 +334,7 @@ if __name__ == '__main__':
             final_img[img_col_start:img_col_end, img_row_start:img_row_end][mask_patch, :] = combined[mask_patch, :]
         else:
             # Unreliable block
-            print("here")
+            # print("here")
             neighbor_patches = get_neighbor_patch_locations(block_col, block_row, block_size, num_blocks)
             similar_patches, distances = [], []
             for (pot_col, pot_row) in neighbor_patches:
@@ -333,10 +344,11 @@ if __name__ == '__main__':
                 cur_similar, cur_dist = get_similar_patch_locations(pot_col, pot_row, context_descriptors, block_size)
                 similar_patches.extend(cur_similar)
                 distances.extend(cur_dist)
-            combined = combine_multi_candidate_patches(masked_img, neighbor_patches, block_size)
-        cur_img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 0, 255]
-        cv2.imshow("which patches were filled in", cur_img_cpy)
-        cv2.waitKey(0)
+            combined = combine_multi_candidate_patches(img, neighbor_patches, block_size)
+            final_img[img_col_start:img_col_end, img_row_start:img_row_end][mask_patch, :] = combined[mask_patch, :]
+        # cur_img_cpy[img_col_start:img_col_end, img_row_start:img_row_end] = [0, 0, 255]
+        # cv2.imshow("which patches were filled in", cur_img_cpy)
+        # cv2.waitKey(0)
     cv2.imshow("original", masked_img)
     cv2.imshow("patches filled in", final_img)
     # cv2.imshow("which patches were filled in", img_cpy)
