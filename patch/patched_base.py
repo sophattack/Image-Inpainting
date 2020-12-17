@@ -267,9 +267,8 @@ def get_neighbor_patch_locations(col, row, block_size, num_blocks):
 
 if __name__ == '__main__':
     test_data = load_data.load_test_data()
-    train_data = load_data.load_train_data()
 
-    img = train_data[25] # 200x200x3
+    img = test_data[2] # 200x200x3
     # img = cv2.imread('test_image.jpg')
     img = cv2.resize(img, (250, 250))
     d = img.shape[0]
@@ -296,7 +295,7 @@ if __name__ == '__main__':
     img_cpy[mask.nonzero()] = 0
     masked_img = np.copy(img_cpy)
     final_img = np.copy(masked_img)
-    block_size = 25
+    block_size = 5
     num_blocks = d//block_size
     half_block = block_size//2
     for col in range(1, num_blocks):
