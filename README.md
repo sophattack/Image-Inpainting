@@ -7,6 +7,7 @@ The testing data is at the subfolder for each methods.
 ### Patch-based
 
 - To Run the Patch-Based method, execute `python patch/patched_base.py`
+- The test data forPatch-Based method is in patch/data
 
 ### Diffusion-based
 
