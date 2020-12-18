@@ -7,13 +7,13 @@ The testing data is at the subfolder for each methods.
 ### Patch-based
 
 - To Run the Patch-Based method, execute `python patch/patched_base.py`
-- The test data forPatch-Based method is in patch/data
+- The test data forPatch-Based method is in `patch/data`
 
 ### Diffusion-based
 
 - To Run the Diffusion-Based method, execute `python diffusion/method3.py`
-- The test data for Diffusion-Based method is in diffusion/data
-- The result for Diffusion-Based method will be in diffusion/save
+- The test data for Diffusion-Based method is in `diffusion/data`
+- The result for Diffusion-Based method will be in `diffusion/save`
 
 ### Machine Learning
 
