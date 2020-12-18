@@ -1,6 +1,6 @@
 # Image Inpainting for CSC420
 
-See [./data dir](./data/README.md) for notes on maintaining data
+The testing data is at the subfolder for each methods.
 
 ## To run the code:
 
