@@ -11,6 +11,8 @@ The testing data is at the subfolder for each methods.
 ### Diffusion-based
 
 - To Run the Diffusion-Based method, execute `python diffusion/method3.py`
+- The test data for Diffusion-Based method is in diffusion/data
+- The result for Diffusion-Based method will be in diffusion/save
 
 ### Machine Learning
 
